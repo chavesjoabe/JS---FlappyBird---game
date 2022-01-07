@@ -14,6 +14,12 @@ const flappyBird = {
     height: 24,
     x: 10,
     y: 50,
+    gravity: 0.25,
+    speed: 0,
+    update() {
+        this.speed += this.gravity
+        this.y += this.speed
+    },
     draw() {
         context.drawImage(
             sprites,
@@ -99,17 +105,73 @@ const background = {
     }
 }
 
+const getReady = {
+    spriteX: 136,
+    spriteY: 0,
+    width: 170,
+    height: 152,
+    x: (canvas.width / 2) - 170 / 2,
+    y: 100,
+    draw() {
+        context.drawImage(
+            sprites,
+            this.spriteX, // Sprite X
+            this.spriteY, // Sprite Y
+            this.width, // Tamanho no recorte da Sprite
+            this.height, // Tamanho do recorte da Sprite
+            this.x, // localizaçao no eixo X
+            this.y, // localizaçao no eixo y
+            this.width,
+            this.height
+        )
+    }
+}
 
+let activeScreen = {}
 
+const changeScreen = (newScreen) => {
+    activeScreen = newScreen
+}
+
+const GAME_SCREENS = {
+    INITIAL: {
+        draw() {
+            background.draw.call(background)
+            floor.draw.call(floor)
+            flappyBird.draw.call(flappyBird)
+            getReady.draw.call(getReady)
+        },
+        update() { },
+        click() {
+            changeScreen(GAME_SCREENS.GAME)
+        }
+    },
+    GAME: {
+        draw() {
+            background.draw.call(background)
+            floor.draw.call(floor)
+            flappyBird.draw.call(flappyBird)
+        },
+        update() {
+            flappyBird.update.call(flappyBird)
+        }
+    }
+}
 
 
 const loop = () => {
-    background.draw.call(background)
-    floor.draw.call(floor)
-    flappyBird.draw.call(flappyBird)
 
 
+    activeScreen.draw()
+    activeScreen.update()
     requestAnimationFrame(loop)
 }
 
+window.addEventListener('click', () => {
+    if (activeScreen.click) {
+        activeScreen.click()
+    }
+})
+
+changeScreen(GAME_SCREENS.INITIAL)
 loop()
