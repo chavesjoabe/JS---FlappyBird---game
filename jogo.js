@@ -1,39 +1,69 @@
 console.log('Jogo iniciado - Flappy Bird - Joabe Chaves')
 
+const HIT_sound = new Audio()
+HIT_sound.src = './effects/hit.wav'
+
+
 const sprites = new Image()
 sprites.src = './sprites.png'
 
 const canvas = document.querySelector('canvas')
 const context = canvas.getContext('2d')
 
+const makeColision = (flappyBird, floor) => {
+    const flappyY = flappyBird.y
 
-const flappyBird = {
-    spriteX: 0,
-    spriteY: 0,
-    width: 33,
-    height: 24,
-    x: 10,
-    y: 50,
-    gravity: 0.25,
-    speed: 0,
-    update() {
-        this.speed += this.gravity
-        this.y += this.speed
-    },
-    draw() {
-        context.drawImage(
-            sprites,
-            this.spriteX, // Sprite X
-            this.spriteY, // Sprite Y
-            this.width, // Tamanho no recorte da Sprite
-            this.height, // Tamanho do recorte da Sprite
-            this.x, // localizaçao no eixo X
-            this.y, // localizaçao no eixo y
-            this.width,
-            this.height
-        )
+    if (flappyY >= floor.y - flappyBird.height) {
+        return true
     }
+
+    return false
 }
+
+const createFlappyBird = () => {
+
+    const flappyBird = {
+        spriteX: 0,
+        spriteY: 0,
+        width: 33,
+        height: 24,
+        x: 10,
+        y: 50,
+        gravity: 0.25,
+        speed: 0,
+        jumpValue: 4.6,
+        jump() {
+            this.speed = - this.jumpValue
+        },
+        update() {
+            if (makeColision(globals.flappyBird, floor)) {
+                console.log('fez colisao')
+                HIT_sound.play()
+                changeScreen(GAME_SCREENS.INITIAL)
+                return
+            }
+            this.speed += this.gravity
+            this.y += this.speed
+        },
+        draw() {
+            context.drawImage(
+                sprites,
+                this.spriteX, // Sprite X
+                this.spriteY, // Sprite Y
+                this.width, // Tamanho no recorte da Sprite
+                this.height, // Tamanho do recorte da Sprite
+                this.x, // localizaçao no eixo X
+                this.y, // localizaçao no eixo y
+                this.width,
+                this.height
+            )
+        }
+    }
+
+    return flappyBird
+}
+
+
 
 const floor = {
     spriteX: 0,
@@ -131,14 +161,25 @@ let activeScreen = {}
 
 const changeScreen = (newScreen) => {
     activeScreen = newScreen
+
+    if (activeScreen.init) {
+        activeScreen.init()
+    }
+}
+
+const globals = {
+    flaapyBird: {}
 }
 
 const GAME_SCREENS = {
     INITIAL: {
+        init() {
+            globals.flappyBird = createFlappyBird()
+        },
         draw() {
             background.draw.call(background)
             floor.draw.call(floor)
-            flappyBird.draw.call(flappyBird)
+            globals.flappyBird.draw.call(globals.flappyBird)
             getReady.draw.call(getReady)
         },
         update() { },
@@ -150,10 +191,13 @@ const GAME_SCREENS = {
         draw() {
             background.draw.call(background)
             floor.draw.call(floor)
-            flappyBird.draw.call(flappyBird)
+            globals.flappyBird.draw.call(globals.flappyBird)
         },
         update() {
-            flappyBird.update.call(flappyBird)
+            globals.flappyBird.update.call(globals.flappyBird)
+        },
+        click() {
+            globals.flappyBird.jump()
         }
     }
 }
