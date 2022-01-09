@@ -1,5 +1,7 @@
 console.log('Jogo iniciado - Flappy Bird - Joabe Chaves')
 
+let frames = 0
+
 const HIT_sound = new Audio()
 HIT_sound.src = './effects/hit.wav'
 
@@ -32,24 +34,46 @@ const createFlappyBird = () => {
         gravity: 0.25,
         speed: 0,
         jumpValue: 4.6,
+        movements: [
+            { spriteX: 0, spriteY: 0 }, // asa para cima
+            { spriteX: 0, spriteY: 26 }, // asa no meio
+            { spriteX: 0, spriteY: 52 }, // asa para baixo
+        ],
+        frame: 0,
+        updateFrame() {
+            const frameInterval = 10
+            const isBiggerThanInterval = frames % frameInterval
+            if (isBiggerThanInterval === 0) {
+                const base_increment = 1
+                const increment = base_increment + this.frame
+                const repeatBase = this.movements.length
+
+                this.frame = increment % repeatBase
+            }
+
+        },
         jump() {
             this.speed = - this.jumpValue
         },
         update() {
-            if (makeColision(globals.flappyBird, floor)) {
+            if (makeColision(globals.flappyBird, globals.floor)) {
                 console.log('fez colisao')
                 HIT_sound.play()
-                changeScreen(GAME_SCREENS.INITIAL)
+                setTimeout(() => {
+                    changeScreen(GAME_SCREENS.INITIAL)
+                }, 500)
                 return
             }
             this.speed += this.gravity
             this.y += this.speed
         },
         draw() {
+            this.updateFrame()
+            const { spriteX, spriteY } = this.movements[this.frame]
             context.drawImage(
                 sprites,
-                this.spriteX, // Sprite X
-                this.spriteY, // Sprite Y
+                spriteX, // Sprite X
+                spriteY, // Sprite Y
                 this.width, // Tamanho no recorte da Sprite
                 this.height, // Tamanho do recorte da Sprite
                 this.x, // localizaçao no eixo X
@@ -63,41 +87,50 @@ const createFlappyBird = () => {
     return flappyBird
 }
 
+const createFloor = () => {
+    const floor = {
+        spriteX: 0,
+        spriteY: 610,
+        width: 224,
+        height: 112,
+        x: 0,
+        y: canvas.height - 112,
+        draw() {
+            context.drawImage(
+                sprites,
+                this.spriteX, // Sprite X
+                this.spriteY, // Sprite Y
+                this.width, // Tamanho no recorte da Sprite
+                this.height, // Tamanho do recorte da Sprite
+                this.x, // localizaçao no eixo X
+                this.y, // localizaçao no eixo y
+                this.width,
+                this.height
+            )
 
-
-const floor = {
-    spriteX: 0,
-    spriteY: 610,
-    width: 224,
-    height: 112,
-    x: 0,
-    y: canvas.height - 112,
-    draw() {
-        context.drawImage(
-            sprites,
-            this.spriteX, // Sprite X
-            this.spriteY, // Sprite Y
-            this.width, // Tamanho no recorte da Sprite
-            this.height, // Tamanho do recorte da Sprite
-            this.x, // localizaçao no eixo X
-            this.y, // localizaçao no eixo y
-            this.width,
-            this.height
-        )
-
-        context.drawImage(
-            sprites,
-            this.spriteX, // Sprite X
-            this.spriteY, // Sprite Y
-            this.width, // Tamanho no recorte da Sprite
-            this.height, // Tamanho do recorte da Sprite
-            (this.x + this.width), // localizaçao no eixo X
-            this.y, // localizaçao no eixo y
-            this.width,
-            this.height
-        )
+            context.drawImage(
+                sprites,
+                this.spriteX, // Sprite X
+                this.spriteY, // Sprite Y
+                this.width, // Tamanho no recorte da Sprite
+                this.height, // Tamanho do recorte da Sprite
+                (this.x + this.width), // localizaçao no eixo X
+                this.y, // localizaçao no eixo y
+                this.width,
+                this.height
+            )
+        },
+        update() {
+            const floorMovement = 1
+            const repeatOn = this.width / 2
+            const movement = this.x - floorMovement
+            this.x = movement % repeatOn
+        }
     }
+    return floor
 }
+
+
 
 const background = {
     spriteX: 390,
@@ -168,17 +201,19 @@ const changeScreen = (newScreen) => {
 }
 
 const globals = {
-    flaapyBird: {}
+    flaapyBird: {},
+    floor: {}
 }
 
 const GAME_SCREENS = {
     INITIAL: {
         init() {
             globals.flappyBird = createFlappyBird()
+            globals.floor = createFloor()
         },
         draw() {
             background.draw.call(background)
-            floor.draw.call(floor)
+            globals.floor.draw.call(globals.floor)
             globals.flappyBird.draw.call(globals.flappyBird)
             getReady.draw.call(getReady)
         },
@@ -190,11 +225,12 @@ const GAME_SCREENS = {
     GAME: {
         draw() {
             background.draw.call(background)
-            floor.draw.call(floor)
+            globals.floor.draw.call(globals.floor)
             globals.flappyBird.draw.call(globals.flappyBird)
         },
         update() {
             globals.flappyBird.update.call(globals.flappyBird)
+            globals.floor.update()
         },
         click() {
             globals.flappyBird.jump()
@@ -208,6 +244,7 @@ const loop = () => {
 
     activeScreen.draw()
     activeScreen.update()
+    frames += 1
     requestAnimationFrame(loop)
 }
 
