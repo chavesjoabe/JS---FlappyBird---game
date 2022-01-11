@@ -7,7 +7,7 @@ let frames = 0;
 const HIT_sound = new Audio();
 HIT_sound.src = "./src/effects/hit.wav";
 
-// =========== Game Components ===========
+// =========== Game Usefull ===========
 
 const sprites = new Image();
 sprites.src = "./src/assets/sprites.png";
@@ -415,7 +415,7 @@ const medal = {
   },
 };
 
-// =========== Functions ===========
+// =========== Functions and globals ===========
 
 let activeScreen = {};
 
