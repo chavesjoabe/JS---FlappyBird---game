@@ -2,24 +2,32 @@ console.log("Jogo iniciado - Flappy Bird - Joabe Chaves");
 
 let frames = 0;
 
+// =========== SFX ===========
+
 const HIT_sound = new Audio();
-HIT_sound.src = "./effects/hit.wav";
+HIT_sound.src = "./src/effects/hit.wav";
+
+// =========== Game Components ===========
 
 const sprites = new Image();
-sprites.src = "./assets/sprites.png";
+sprites.src = "./src/assets/sprites.png";
 
 const canvas = document.querySelector("canvas");
 const context = canvas.getContext("2d");
 
-const makeColision = (flappyBird, floor) => {
-  if (flappyBird.y >= floor.y - flappyBird.height) {
-    return true;
-  }
+const storage = sessionStorage;
 
-  return false;
-};
+// =========== Game Components ===========
 
 const createFlappyBird = () => {
+  const makeColision = (flappyBird, floor) => {
+    if (flappyBird.y >= floor.y - flappyBird.height) {
+      return true;
+    }
+
+    return false;
+  };
+
   const flappyBird = {
     spriteX: 0,
     spriteY: 0,
@@ -55,7 +63,7 @@ const createFlappyBird = () => {
         console.log("fez colisao");
         HIT_sound.play();
         setTimeout(() => {
-          changeScreen(GAME_SCREENS.INITIAL);
+          changeScreen(GAME_SCREENS.GAME_OVER);
         }, 500);
         return;
       }
@@ -162,9 +170,9 @@ const background = {
 };
 
 const getReady = {
-  spriteX: 136,
+  spriteX: 134,
   spriteY: 0,
-  width: 170,
+  width: 174,
   height: 152,
   x: canvas.width / 2 - 170 / 2,
   y: 100,
@@ -269,7 +277,8 @@ const createPipes = () => {
         pair.x += -2;
 
         if (this.pipeColision(pair, globals.flappyBird)) {
-          changeScreen(GAME_SCREENS.INITIAL);
+          HIT_sound.play();
+          changeScreen(GAME_SCREENS.GAME_OVER);
         }
 
         if (pair.x <= 0 - this.width) {
@@ -281,6 +290,132 @@ const createPipes = () => {
 
   return pipe;
 };
+
+const gameOver = {
+  spriteX: 134,
+  spriteY: 152,
+  width: 226,
+  height: 200,
+  x: canvas.width / 2 - 226 / 2,
+  y: 100,
+  draw() {
+    context.drawImage(
+      sprites,
+      this.spriteX, // Sprite X
+      this.spriteY, // Sprite Y
+      this.width, // Tamanho no recorte da Sprite
+      this.height, // Tamanho do recorte da Sprite
+      this.x, // localizaçao no eixo X
+      this.y, // localizaçao no eixo y
+      this.width,
+      this.height
+    );
+  },
+};
+
+const createPoints = () => {
+  const points = {
+    points: 0,
+    spriteX: 134,
+    spriteY: 155,
+    width: 226,
+    height: 198,
+    x: canvas.width / 2 - 198 / 2,
+    y: 100,
+    bestScore: storage.getItem("bestScore") || 0,
+    medalName: "silver",
+    draw() {
+      context.font = "35px 'VT323";
+      context.textAlign = "right";
+      context.fillStyle = "white";
+      context.fillText(`${this.points}`, canvas.width - 35, 30);
+    },
+    update() {
+      const baseFramesPassed = 50;
+      const FramesPassed = frames % baseFramesPassed === 0;
+      if (FramesPassed) {
+        this.points += 1;
+        if (this.points > this.bestScore) {
+          this.bestScore = this.points;
+          this.medalName = "gold";
+          storage.setItem("bestScore", this.bestScore);
+        }
+      }
+    },
+  };
+
+  return points;
+};
+
+const createGameOverScore = () => {
+  const gameOverScore = {
+    points: 0,
+    draw() {
+      context.font = "30px 'VT323";
+      context.fillStyle = "white";
+      context.textAlign = "right";
+      context.fillText(`${this.points}`, canvas.width - 70, 196);
+    },
+    update() {
+      this.points = globals.points.points;
+    },
+  };
+  return gameOverScore;
+};
+
+const createGameOverBestScore = () => {
+  const gameOverBestScore = {
+    bestScore: 0,
+    draw() {
+      context.font = "30px 'VT323";
+      context.fillStyle = "white";
+      context.textAlign = "right";
+      context.fillText(`${this.bestScore}`, canvas.width - 70, 240);
+    },
+    update() {
+      this.bestScore = globals.points.bestScore;
+    },
+  };
+  return gameOverBestScore;
+};
+
+const medal = {
+  medals: {
+    gold: {
+      spriteX: 0,
+      spriteY: 124,
+    },
+    silver: {
+      spriteX: 0,
+      spriteY: 78,
+    },
+  },
+  spriteX: 0,
+  spriteY: 124,
+  width: 44,
+  height: 44,
+  x: 73,
+  y: 188,
+  draw() {
+    context.drawImage(
+      sprites,
+      this.spriteX, // Sprite X
+      this.spriteY, // Sprite Y
+      this.width, // Tamanho no recorte da Sprite
+      this.height, // Tamanho do recorte da Sprite
+      this.x, // localizaçao no eixo X
+      this.y, // localizaçao no eixo y
+      this.width,
+      this.height
+    );
+  },
+  update() {
+    this.spriteX = this.medals[globals.points.medalName].spriteX;
+    this.spriteY = this.medals[globals.points.medalName].spriteY;
+  },
+};
+
+// =========== Functions ===========
 
 let activeScreen = {};
 
@@ -296,7 +431,12 @@ const globals = {
   flappyBird: {},
   floor: {},
   pipes: {},
+  points: {},
+  gameOverScore: {},
+  bestScore: 0,
 };
+
+// =========== Game Screens ===========
 
 const GAME_SCREENS = {
   INITIAL: {
@@ -318,22 +458,47 @@ const GAME_SCREENS = {
     },
   },
   GAME: {
+    init() {
+      globals.points = createPoints();
+      globals.gameOverScore = createGameOverScore();
+      globals.bestScore = createGameOverBestScore();
+    },
     draw() {
       background.draw.call(background);
       globals.pipes.draw.call(globals.pipes);
       globals.floor.draw.call(globals.floor);
       globals.flappyBird.draw.call(globals.flappyBird);
+      globals.points.draw.call(globals.points);
     },
     update() {
       globals.flappyBird.update.call(globals.flappyBird);
       globals.pipes.update();
       globals.floor.update();
+      globals.points.update();
+      medal.update();
+      globals.gameOverScore.update();
+      globals.bestScore.update();
     },
     click() {
       globals.flappyBird.jump();
     },
   },
+  GAME_OVER: {
+    init() {},
+    draw() {
+      gameOver.draw.call(gameOver);
+      globals.gameOverScore.draw.call(globals.gameOverScore);
+      medal.draw.call(medal);
+      globals.bestScore.draw.call(globals.bestScore);
+    },
+    update() {},
+    click() {
+      changeScreen(GAME_SCREENS.INITIAL);
+    },
+  },
 };
+
+// =========== Main Game loaders ===========
 
 const loop = () => {
   activeScreen.draw();
